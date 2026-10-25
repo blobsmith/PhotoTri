@@ -17,6 +17,12 @@ static class MapPage
           html, body, #map { margin: 0; height: 100%; font-family: "Segoe UI", sans-serif; }
           #offline { display: none; position: absolute; inset: 0; align-items: center; justify-content: center;
                      color: #666; background: #f3f3f3; text-align: center; padding: 20px; }
+          /* Mode sombre : fonds OpenStreetMap inversés, teintes conservées */
+          body.dark, body.dark #map { background: #1f1f1f; }
+          body.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88); }
+          body.dark #offline { background: #2b2b2b; color: #bbb; }
+          body.dark .leaflet-control-attribution { background: rgba(32, 32, 32, 0.8); color: #aaa; }
+          body.dark .leaflet-control-attribution a { color: #8ab4f8; }
         </style>
         </head>
         <body>
@@ -34,6 +40,8 @@ static class MapPage
           }).addTo(map);
           layer = L.layerGroup().addTo(map);
         }
+
+        function setDark(on) { document.body.classList.toggle("dark", on); }
 
         function setPlaces(places) {
           if (!map) return;

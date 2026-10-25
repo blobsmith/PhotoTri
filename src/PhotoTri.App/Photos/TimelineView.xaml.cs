@@ -14,7 +14,7 @@ namespace PhotoTri.App.Photos;
 /// </summary>
 public partial class TimelineView : UserControl
 {
-    const double TileWidth = 154; // vignette de 150 + marges
+    const double TileWidth = 156; // vignette de 150 + marges
 
     readonly Dictionary<long, PhotoTile> _tiles = new();
     IReadOnlyList<CatalogEntry> _entries = Array.Empty<CatalogEntry>();
@@ -40,7 +40,7 @@ public partial class TimelineView : UserControl
         if (libraryRoot != _libraryRoot) _tiles.Clear();
         _libraryRoot = libraryRoot;
         _entries = entries;
-        EmptyText.Visibility = entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyPanel.Visibility = entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildRows(force: true);
     }
 

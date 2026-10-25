@@ -1,32 +1,90 @@
 <UserControl x:Class="PhotoTri.App.Photos.PhotosView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:photos="clr-namespace:PhotoTri.App.Photos">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="190" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <UserControl.Resources>
+        <!-- Raccourci rond vers une personne ou un lieu -->
+        <DataTemplate x:Key="ShortcutTemplate" DataType="{x:Type photos:Shortcut}">
+            <Button Click="Shortcut_Click" Tag="{Binding}" Cursor="Hand" Focusable="False" Margin="0,0,10,0" ToolTip="{Binding ToolTip}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <StackPanel Width="72" Background="Transparent">
+                            <Grid x:Name="Disc" Width="56" Height="56" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform />
+                                </Grid.RenderTransform>
+                                <Ellipse Fill="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Ellipse>
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{Binding Image}" Stretch="UniformToFill" />
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="24"
+                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                               Visibility="{Binding ShowSymbol, Converter={StaticResource BoolToVisibility}}" />
+                            </Grid>
+                            <TextBlock Text="{Binding Label}" FontSize="12" Margin="0,6,0,0" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <EventTrigger RoutedEvent="MouseEnter">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Disc" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.07" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="Disc" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.07" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="MouseLeave">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Disc" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.15" />
+                                        <DoubleAnimation Storyboard.TargetName="Disc" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.15" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
 
-        <TreeView x:Name="DateTree" Grid.Column="0" Margin="0,0,10,0" BorderThickness="0,0,1,0"
-                  SelectedItemChanged="DateTree_SelectedItemChanged" />
-
-        <DockPanel Grid.Column="1">
-            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                <ComboBox x:Name="KindFilter" Width="120" Margin="0,0,8,4" SelectionChanged="Filter_Changed" />
-                <ComboBox x:Name="OriginFilter" Width="170" Margin="0,0,8,4" SelectionChanged="Filter_Changed" />
-                <ComboBox x:Name="DeviceFilter" Width="180" Margin="0,0,12,4" SelectionChanged="Filter_Changed" />
-                <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="#555" Margin="0,0,0,4" />
-            </WrapPanel>
-
-            <Border x:Name="OfflineBanner" DockPanel.Dock="Top" Background="#FFF4CE" Padding="8,5" Margin="0,0,0,6"
-                    Visibility="Collapsed">
-                <TextBlock TextWrapping="Wrap"
-                           Text="Le disque de la bibliothèque n'est pas branché : vous voyez les miniatures gardées sur ce PC. Branchez le disque pour ouvrir les photos." />
-            </Border>
-
-            <photos:TimelineView x:Name="Timeline"
-                                 EmptyMessage="Aucune photo pour l'instant. Utilisez l'onglet « Transfert » pour copier les photos de votre téléphone." />
+    <DockPanel>
+        <!-- Titre, recherche, import -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <ui:Button DockPanel.Dock="Right" Content="Importer" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary"
+                       Click="Import_Click" Margin="10,0,0,0" ToolTip="Transférer les photos du téléphone" />
+            <ui:TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="320" PlaceholderText="Rechercher une personne, un lieu…"
+                        Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" TextChanged="Search_TextChanged" />
+            <TextBlock Text="Photos" Style="{StaticResource PageTitle}" VerticalAlignment="Center" />
         </DockPanel>
-    </Grid>
+
+        <!-- Personnes et lieux en raccourcis -->
+        <ItemsControl x:Name="Shortcuts" DockPanel.Dock="Top" ItemTemplate="{StaticResource ShortcutTemplate}" Margin="0,0,0,12">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+
+        <!-- Filtres -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <ComboBox x:Name="MonthJump" Width="190" Margin="0,0,8,6" SelectionChanged="MonthJump_SelectionChanged"
+                      ToolTip="Aller directement à un mois" />
+            <ComboBox x:Name="KindFilter" Width="150" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
+            <ComboBox x:Name="OriginFilter" Width="190" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
+            <ComboBox x:Name="DeviceFilter" Width="200" Margin="0,0,12,6" SelectionChanged="Filter_Changed" />
+            <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        </WrapPanel>
+
+        <ui:InfoBar x:Name="OfflineBanner" DockPanel.Dock="Top" Severity="Warning" IsClosable="False" IsOpen="False" Margin="0,4,0,8"
+                    Title="Disque non branché"
+                    Message="Vous voyez les miniatures gardées sur ce PC. Branchez le disque de la bibliothèque pour ouvrir les photos." />
+
+        <photos:TimelineView x:Name="Timeline"
+                             EmptyMessage="Aucune photo pour l'instant. Cliquez sur « Importer » pour copier les photos de votre téléphone." />
+    </DockPanel>
 </UserControl>

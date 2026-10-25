@@ -5,7 +5,11 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Wpf.Ui.Controls;
+using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
 using PhotoTri.App.Thumbnails;
 using PhotoTri.Core.Media;
 
@@ -24,6 +28,8 @@ public partial class ViewerWindow : Window
     internal ViewerWindow(IReadOnlyList<PhotoTile> tiles, int index)
     {
         InitializeComponent();
+        _chromeTimer.Tick += (_, _) => HideChrome();
+        Loaded += (_, _) => ShowChrome();
         _tiles = tiles;
         _index = Math.Max(0, index);
         _videoClock.Tick += (_, _) => UpdateVideoPosition();
@@ -58,6 +64,8 @@ public partial class ViewerWindow : Window
         Message.Text = "";
         // La miniature s'affiche tout de suite, en attendant l'image complète.
         Picture.Source = tile.Thumbnail;
+        // Fondu à l'arrivée de chaque photo.
+        Picture.BeginAnimation(OpacityProperty, new DoubleAnimation(0.25, 1, TimeSpan.FromMilliseconds(220)));
         Picture.Visibility = Visibility.Visible;
 
         if (tile.FullPath is null || !File.Exists(tile.FullPath))
@@ -77,7 +85,7 @@ public partial class ViewerWindow : Window
             Video.Source = new Uri(tile.FullPath);
             Video.Play();
             _playing = true;
-            PlayPauseButton.Content = "⏸ Pause";
+            ShowPlaying(true);
             VideoControls.Visibility = Visibility.Visible;
             _videoClock.Start();
             return;
@@ -180,7 +188,7 @@ public partial class ViewerWindow : Window
         Video.Pause();
         Video.Position = TimeSpan.Zero;
         _playing = false;
-        PlayPauseButton.Content = "▶ Lecture";
+        ShowPlaying(false);
         UpdateVideoPosition();
     }
 
@@ -199,7 +207,7 @@ public partial class ViewerWindow : Window
         if (Video.Source is null) return;
         if (_playing) Video.Pause(); else Video.Play();
         _playing = !_playing;
-        PlayPauseButton.Content = _playing ? "⏸ Pause" : "▶ Lecture";
+        ShowPlaying(_playing);
     }
 
     void UpdateVideoPosition()
@@ -223,6 +231,41 @@ public partial class ViewerWindow : Window
     {
         if (!_seeking) Video.Position = TimeSpan.FromSeconds(Position.Value);
     }
+
+    void ShowPlaying(bool playing)
+    {
+        PlayPauseButton.Content = playing ? "Pause" : "Lecture";
+        PlayPauseButton.Icon = new SymbolIcon(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24);
+    }
+
+    // ---- Barres en surimpression : visibles quand la souris bouge, cachées après un moment d'inactivité ----
+
+    readonly DispatcherTimer _chromeTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
+    bool _chromeVisible = true;
+
+    void Window_MouseMove(object sender, MouseEventArgs e) => ShowChrome();
+
+    void ShowChrome()
+    {
+        _chromeTimer.Stop();
+        _chromeTimer.Start();
+        Cursor = null;
+        if (_chromeVisible) return;
+        _chromeVisible = true;
+        foreach (var element in ChromeElements) element.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(150)));
+    }
+
+    void HideChrome()
+    {
+        _chromeTimer.Stop();
+        // On garde les barres tant que la souris est dessus.
+        if (ChromeElements.Any(e => e.IsMouseOver)) return;
+        _chromeVisible = false;
+        Cursor = Cursors.None;
+        foreach (var element in ChromeElements) element.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(400)));
+    }
+
+    IEnumerable<UIElement> ChromeElements => new UIElement[] { TopBar, PreviousButton, NextButton, VideoControls };
 
     // ---- Navigation et actions ----
 
@@ -266,12 +309,14 @@ public partial class ViewerWindow : Window
         {
             // Pour une photo, l'image affichée est aussi copiée (collage dans Word, Paint…).
             MediaSharing.Copy(path, CurrentTile.IsVideo ? null : Picture.Source as BitmapSource);
-            CopyButton.Content = "✓ Copié";
+            CopyButton.Content = "Copié";
+            CopyButton.Icon = new SymbolIcon(SymbolRegular.Checkmark24);
             var restore = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
             restore.Tick += (_, _) =>
             {
                 restore.Stop();
-                CopyButton.Content = "⧉ Copier";
+                CopyButton.Content = "Copier";
+                CopyButton.Icon = new SymbolIcon(SymbolRegular.Copy24);
             };
             restore.Start();
         }
@@ -287,7 +332,7 @@ public partial class ViewerWindow : Window
         if (CurrentTile?.FullPath is not { } path || !File.Exists(path)) return;
         Video.Pause();
         _playing = false;
-        PlayPauseButton.Content = "▶ Lecture";
+        ShowPlaying(false);
         try
         {
             MediaSharing.Share(this, path, TitleText.Text);

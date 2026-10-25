@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
 using PhotoTri.Core.Library;
+using Wpf.Ui.Appearance;
 
 namespace PhotoTri.App.Places;
 
@@ -37,6 +38,7 @@ public partial class PlacesView : UserControl
     public PlacesView()
     {
         InitializeComponent();
+        ApplicationThemeManager.Changed += (_, _) => ApplyMapTheme();
         // La carte n'est chargée qu'à la première ouverture de l'onglet.
         IsVisibleChanged += async (_, _) =>
         {
@@ -191,6 +193,7 @@ public partial class PlacesView : UserControl
             Map.CoreWebView2.NavigationCompleted += (_, _) =>
             {
                 _mapReady = true;
+                ApplyMapTheme();
                 PushPlacesToMap();
                 ShowSelection(moveMap: true);
             };
@@ -203,6 +206,14 @@ public partial class PlacesView : UserControl
             MapError.Text = "La carte n'a pas pu s'afficher (composant Microsoft Edge WebView2 manquant ?). " +
                             "Les lieux restent disponibles dans la liste.\n\n" + ex.Message;
         }
+    }
+
+    /// <summary>La carte suit le thème clair ou sombre de Windows.</summary>
+    void ApplyMapTheme()
+    {
+        if (!_mapReady) return;
+        var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+        _ = Map.CoreWebView2.ExecuteScriptAsync($"setDark({(dark ? "true" : "false")})");
     }
 
     void PushPlacesToMap()
@@ -218,8 +229,8 @@ public partial class PlacesView : UserControl
         _ = Map.CoreWebView2.ExecuteScriptAsync($"focusPlaces({JsonSerializer.Serialize(keys)})");
     }
 
-    /// <summary>Clic sur un lieu de la carte : on le sélectionne dans la liste.</summary>
-    void SelectPlace(string key)
+    /// <summary>Sélectionne une ville dans la liste (clic sur la carte ou raccourci de la page Photos).</summary>
+    public void SelectPlace(string key)
     {
         foreach (TreeViewItem country in PlaceTree.Items)
         {

@@ -13,7 +13,7 @@ sealed record HeaderItem(string Text) : PeopleListItem;
 sealed record PersonItem(Person Person) : PeopleListItem
 {
     public string Name => Person.Name;
-    public string Count => $"{Person.Faces.Count:N0} photo(s)";
+    public string Count => $"{Person.Faces.Select(f => f.FileId).Distinct().Count():N0} photo(s)";
     public ImageSource? Image => FaceImages.Load(Person.Faces[0].CropPath);
 }
 

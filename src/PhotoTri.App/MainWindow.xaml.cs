@@ -1,5 +1,13 @@
 ﻿using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
+using ListBoxItem = System.Windows.Controls.ListBoxItem;
+using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxResult = System.Windows.MessageBoxResult;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -13,7 +21,7 @@ using PhotoTri.Core.Transfer;
 
 namespace PhotoTri.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : FluentWindow
 {
     const int WM_DEVICECHANGE = 0x0219;
 
@@ -27,6 +35,23 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Le thème clair ou sombre et la couleur d'accent suivent les réglages de Windows, même en cours d'utilisation.
+        Loaded += (_, _) =>
+        {
+            if (App.ForcedTheme is null) SystemThemeWatcher.Watch(this);
+        };
+        NavList.SelectedIndex = 0;
+        PhotosTab.ImportRequested += () => Navigate("Transfer");
+        PhotosTab.PersonRequested += id =>
+        {
+            Navigate("People");
+            PeopleTab.SelectPerson(id);
+        };
+        PhotosTab.PlaceRequested += key =>
+        {
+            Navigate("Places");
+            PlacesTab.SelectPlace(key);
+        };
         _settings.Library ??= LibraryLocation.FromPath(Directory.CreateDirectory(AppSettings.DefaultLibraryPath).FullName);
 
         IncludePhotos.IsChecked = _settings.Filter.Photos;
@@ -215,6 +240,33 @@ public partial class MainWindow : Window
 
     MtpPhoneSource? SelectedDevice => DeviceList.SelectedItem as MtpPhoneSource;
 
+    // ---- Navigation ----
+
+    void Navigate(string tag) =>
+        NavList.SelectedItem = NavList.Items.OfType<ListBoxItem>().First(i => (string)i.Tag == tag);
+
+    void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var tag = (NavList.SelectedItem as ListBoxItem)?.Tag as string;
+        PhotosTab.Visibility = tag == "Photos" ? Visibility.Visible : Visibility.Collapsed;
+        PeopleTab.Visibility = tag == "People" ? Visibility.Visible : Visibility.Collapsed;
+        PlacesTab.Visibility = tag == "Places" ? Visibility.Visible : Visibility.Collapsed;
+        TransferTab.Visibility = tag == "Transfer" ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    void PhoneCard_Click(object sender, MouseButtonEventArgs e) => Navigate("Transfer");
+
+    /// <summary>Carte du téléphone en bas du menu : visible dès qu'un téléphone est branché.</summary>
+    void UpdatePhoneCard(string? text = null, double? progress = null)
+    {
+        PhoneCard.Visibility = SelectedDevice is null ? Visibility.Collapsed : Visibility.Visible;
+        if (SelectedDevice is null) return;
+        PhoneCardName.Text = SelectedDevice.Name;
+        if (text is not null) PhoneCardText.Text = text;
+        PhoneCardProgress.Visibility = progress is null ? Visibility.Collapsed : Visibility.Visible;
+        if (progress is { } p) PhoneCardProgress.Value = p;
+    }
+
     // ---- Téléphones ----
 
     async Task RefreshDevicesAsync()
@@ -238,6 +290,7 @@ public partial class MainWindow : Window
             ? "Aucun téléphone détecté. Branchez-le en USB, déverrouillez-le et choisissez « Transfert de fichiers » dans la notification USB."
             : $"{_devices.Count} téléphone(s) détecté(s).";
         UpdateButtons();
+        UpdatePhoneCard("Branché · prêt à transférer");
     }
 
     void DisposeDevices()
@@ -282,14 +335,14 @@ public partial class MainWindow : Window
             AppendLog("Impossible de lire la bibliothèque : " + ex.Message);
             (catalog, people) = (LibraryCatalog.Empty, PeopleCatalog.Empty);
         }
-        PhotosTab.Load(catalog, root);
+        PhotosTab.Load(catalog, people, root);
         PlacesTab.Load(catalog, root);
         PeopleTab.Load(people, catalog, root);
         if (catalog.Entries.Count == 0 && !_shownTransferTab)
         {
             // Premier lancement : rien à montrer, on propose directement le transfert.
             _shownTransferTab = true;
-            Tabs.SelectedItem = TransferTab;
+            Navigate("Transfer");
         }
     }
 
@@ -305,13 +358,17 @@ public partial class MainWindow : Window
         {
             LibraryPath.Text = location.LastKnownPath;
             LibraryStatus.Text = "⚠ Disque non branché : branchez le disque de la bibliothèque pour pouvoir transférer.";
+            DiskGauge.Visibility = Visibility.Collapsed;
         }
         else
         {
             LibraryPath.Text = path;
             Directory.CreateDirectory(path);
-            var free = new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace;
-            LibraryStatus.Text = $"{VolumeLocator.Describe(path)} — {TransferEngine.FormatSize(free)} libres";
+            var drive = new DriveInfo(Path.GetPathRoot(path)!);
+            var free = drive.AvailableFreeSpace;
+            LibraryStatus.Text = $"{VolumeLocator.Describe(path)} — {TransferEngine.FormatSize(free)} libres sur {TransferEngine.FormatSize(drive.TotalSize)}";
+            DiskGauge.Visibility = Visibility.Visible;
+            DiskGauge.Value = 100.0 * (drive.TotalSize - free) / drive.TotalSize;
         }
         UpdateButtons();
     }
@@ -371,6 +428,7 @@ public partial class MainWindow : Window
             ProgressText.Text = _plan.Items.Count == 0
                 ? "Rien de nouveau à transférer."
                 : $"{_plan.Items.Count} fichier(s) prêt(s) à être transféré(s).";
+            UpdatePhoneCard(_plan.Items.Count == 0 ? "Tout est déjà transféré" : $"{_plan.Items.Count:N0} nouveaux fichiers");
             return true;
         }
         catch (OperationCanceledException)
@@ -418,15 +476,18 @@ public partial class MainWindow : Window
             if (p.Done >= p.Total)
             {
                 ProgressText.Text = "Terminé.";
+                UpdatePhoneCard("Transfert terminé");
                 return;
             }
             eta.Add(clock.Elapsed, p.Done, p.BytesDone);
             var text = $"{p.Done + 1:N0} / {p.Total:N0} — {p.CurrentFile}";
             if (eta.BytesPerSecond is { } speed) text += $" — {TransferEta.FormatSpeed(speed)}";
-            text += eta.Remaining(p.Total, p.BytesTotal) is { } left
-                ? $" — {TransferEta.FormatRemaining(left)}"
-                : " — calcul du temps restant…";
+            var left = eta.Remaining(p.Total, p.BytesTotal);
+            text += left is { } l ? $" — {TransferEta.FormatRemaining(l)}" : " — calcul du temps restant…";
             ProgressText.Text = text;
+            // La carte du menu suit le transfert depuis les autres pages.
+            UpdatePhoneCard(left is { } r ? $"{p.Done:N0} / {p.Total:N0} · {TransferEta.FormatRemaining(r)}" : $"{p.Done:N0} / {p.Total:N0}",
+                100.0 * p.BytesDone / Math.Max(1, p.BytesTotal));
         });
         // Le PC ne doit pas se mettre en veille au milieu du transfert.
         using var keepAwake = new KeepAwake();

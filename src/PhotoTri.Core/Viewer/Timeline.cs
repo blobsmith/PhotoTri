@@ -9,7 +9,8 @@ public abstract record TimelineRow;
 
 public sealed record MonthHeaderRow(int Year, int Month, string Title, int Count) : TimelineRow;
 
-public sealed record DayHeaderRow(DateOnly Day, string Title) : TimelineRow;
+/// <summary>Titre d'un jour, avec un résumé : « Genève · avec Amélia · 5 photos ».</summary>
+public sealed record DayHeaderRow(DateOnly Day, string Title, string Subtitle = "") : TimelineRow;
 
 public sealed record ThumbnailRow(IReadOnlyList<CatalogEntry> Items) : TimelineRow;
 
@@ -40,11 +41,35 @@ public static class Timeline
             rows.Add(new MonthHeaderRow(month.Key.Year, month.Key.Month, MonthTitle(month.Key.Year, month.Key.Month), items.Count));
             foreach (var day in items.GroupBy(e => DateOnly.FromDateTime(e.TakenAt)))
             {
-                rows.Add(new DayHeaderRow(day.Key, DayTitle(day.Key)));
-                rows.AddRange(day.Chunk(columns).Select(chunk => new ThumbnailRow(chunk)));
+                var dayItems = day.ToList();
+                rows.Add(new DayHeaderRow(day.Key, DayTitle(day.Key), DaySummary(dayItems)));
+                rows.AddRange(dayItems.Chunk(columns).Select(chunk => new ThumbnailRow(chunk)));
             }
         }
         return rows;
+    }
+
+    /// <summary>Lieu le plus fréquent, personnes reconnues (trois au plus) et nombre d'éléments de la journée.</summary>
+    public static string DaySummary(IReadOnlyList<CatalogEntry> day)
+    {
+        var parts = new List<string>();
+        var city = day.Where(e => e.Place is not null).GroupBy(e => e.Place!.City).MaxBy(g => g.Count())?.Key;
+        if (city is not null) parts.Add(city);
+
+        var people = day.SelectMany(e => e.People ?? Array.Empty<string>())
+            .GroupBy(n => n).OrderByDescending(g => g.Count()).Select(g => g.Key).ToList();
+        if (people.Count > 0)
+        {
+            var shown = people.Take(3).ToList();
+            var names = shown.Count == 1 ? shown[0] : string.Join(", ", shown.Take(shown.Count - 1)) + " et " + shown[^1];
+            parts.Add("avec " + names + (people.Count > 3 ? "…" : ""));
+        }
+
+        var videos = day.Count(e => e.Kind == MediaKind.Video);
+        var photos = day.Count - videos;
+        if (photos > 0) parts.Add(photos == 1 ? "1 photo" : $"{photos} photos");
+        if (videos > 0) parts.Add(videos == 1 ? "1 vidéo" : $"{videos} vidéos");
+        return string.Join(" · ", parts);
     }
 
     public static string MonthTitle(int year, int month) =>

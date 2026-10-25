@@ -1,95 +1,180 @@
-﻿<Window x:Class="PhotoTri.App.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:photos="clr-namespace:PhotoTri.App.Photos"
-        xmlns:places="clr-namespace:PhotoTri.App.Places"
-        xmlns:people="clr-namespace:PhotoTri.App.People"
-        Title="PhotoTri" Height="760" Width="1100" MinWidth="640" MinHeight="560"
-        WindowStartupLocation="CenterScreen" FontSize="13">
-    <Window.Resources>
-        <Style TargetType="GroupBox">
-            <Setter Property="Margin" Value="0,0,0,10" />
-            <Setter Property="Padding" Value="8" />
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="14,5" />
-            <Setter Property="MinWidth" Value="90" />
-        </Style>
-        <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#666" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-        </Style>
-    </Window.Resources>
+﻿<ui:FluentWindow x:Class="PhotoTri.App.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:photos="clr-namespace:PhotoTri.App.Photos"
+                 xmlns:places="clr-namespace:PhotoTri.App.Places"
+                 xmlns:people="clr-namespace:PhotoTri.App.People"
+                 Title="PhotoTri" Height="800" Width="1200" MinWidth="760" MinHeight="560"
+                 WindowStartupLocation="CenterScreen"
+                 ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica" WindowCornerPreference="Round">
 
-    <TabControl x:Name="Tabs" Margin="8">
-        <TabItem Header="  Photos  ">
-            <photos:PhotosView x:Name="PhotosTab" Margin="6" />
-        </TabItem>
-        <TabItem Header="  Personnes  ">
-            <people:PeopleView x:Name="PeopleTab" Margin="6" />
-        </TabItem>
-        <TabItem Header="  Lieux  ">
-            <places:PlacesView x:Name="PlacesTab" Margin="6" />
-        </TabItem>
-        <TabItem x:Name="TransferTab" Header="  Transfert  ">
-    <DockPanel Margin="10">
-        <!-- Boutons d'action et progression -->
-        <StackPanel DockPanel.Dock="Bottom">
-            <ProgressBar x:Name="Progress" Height="18" Margin="0,0,0,4" />
-            <TextBlock x:Name="ProgressText" Margin="0,0,0,10" TextTrimming="CharacterEllipsis" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="AnalyzeButton" Content="Analyser" Click="Analyze_Click" Margin="0,0,8,0" />
-                <Button x:Name="TransferButton" Content="Transférer" Click="Transfer_Click" Margin="0,0,8,0"
-                        FontWeight="SemiBold" IsDefault="True" />
-                <Button x:Name="CancelButton" Content="Annuler" Click="Cancel_Click" IsEnabled="False" />
-            </StackPanel>
-        </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <StackPanel DockPanel.Dock="Top">
-            <GroupBox Header="Téléphone">
-                <StackPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Actualiser" Click="RefreshDevices_Click" Margin="8,0,0,0" />
-                        <ComboBox x:Name="DeviceList" DisplayMemberPath="Name" SelectionChanged="DeviceList_SelectionChanged" />
+        <ui:TitleBar Grid.Row="0" Title="PhotoTri">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="ImageMultiple24" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Menu latéral -->
+            <DockPanel Grid.Column="0" Margin="8,4,8,12">
+                <!-- Téléphone branché : un clic mène au transfert -->
+                <Border x:Name="PhoneCard" DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="12" Margin="0"
+                        Cursor="Hand" MouseLeftButtonUp="PhoneCard_Click" Visibility="Collapsed"
+                        ToolTip="Ouvrir le transfert">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Phone24" FontSize="18" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,8,0" />
+                            <TextBlock x:Name="PhoneCardName" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </StackPanel>
+                        <ProgressBar x:Name="PhoneCardProgress" Height="4" Margin="0,10,0,6" Visibility="Collapsed" />
+                        <TextBlock x:Name="PhoneCardText" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <ListBox x:Name="NavList" ItemContainerStyle="{StaticResource SubtleListItem}" Background="Transparent" BorderThickness="0"
+                         SelectionChanged="NavList_SelectionChanged">
+                    <ListBoxItem Tag="Photos">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Image24" FontSize="18" Margin="0,0,12,0" />
+                            <TextBlock Text="Photos" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="People">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="People24" FontSize="18" Margin="0,0,12,0" />
+                            <TextBlock Text="Personnes" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Places">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Location24" FontSize="18" Margin="0,0,12,0" />
+                            <TextBlock Text="Lieux" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Transfer">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Phone24" FontSize="18" Margin="0,0,12,0" />
+                            <TextBlock Text="Transfert" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Contenu : couche légèrement opaque au-dessus du fond Mica, coin arrondi comme dans Windows 11 -->
+            <Border Grid.Column="1" Background="{DynamicResource LayerFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,0,0" CornerRadius="8,0,0,0">
+                <Grid Margin="28,20,28,16">
+                    <photos:PhotosView x:Name="PhotosTab" />
+                    <people:PeopleView x:Name="PeopleTab" Visibility="Collapsed" />
+                    <places:PlacesView x:Name="PlacesTab" Visibility="Collapsed" />
+
+                    <!-- Transfert -->
+                    <DockPanel x:Name="TransferTab" Visibility="Collapsed">
+                        <TextBlock DockPanel.Dock="Top" Text="Transfert" Style="{StaticResource PageTitle}" Margin="0,0,0,16" />
+
+                        <!-- Progression et actions -->
+                        <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="0,8,0,0">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                    <ui:Button x:Name="AnalyzeButton" Content="Analyser" Icon="{ui:SymbolIcon Search24}" Click="Analyze_Click" Margin="0,0,8,0" />
+                                    <ui:Button x:Name="TransferButton" Content="Transférer" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary"
+                                               Click="Transfer_Click" Margin="0,0,8,0" IsDefault="True" />
+                                    <ui:Button x:Name="CancelButton" Content="Annuler" Icon="{ui:SymbolIcon Dismiss24}" Click="Cancel_Click" IsEnabled="False" />
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="ProgressText" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="Prêt." />
+                                    <ProgressBar x:Name="Progress" Height="6" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <Expander DockPanel.Dock="Bottom" Header="Journal" Margin="0,4,0,0">
+                            <TextBox x:Name="Log" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="140" />
+                        </Expander>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Téléphone -->
+                                <Border Style="{StaticResource Card}">
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="28" Margin="0,0,16,0" VerticalAlignment="Top"
+                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                            <ui:SymbolIcon Symbol="Phone24" FontSize="28" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="Téléphone" Style="{StaticResource SectionTitle}" />
+                                            <DockPanel>
+                                                <ui:Button DockPanel.Dock="Right" Content="Actualiser" Icon="{ui:SymbolIcon ArrowSync24}"
+                                                           Click="RefreshDevices_Click" Margin="8,0,0,0" />
+                                                <ComboBox x:Name="DeviceList" DisplayMemberPath="Name" SelectionChanged="DeviceList_SelectionChanged" />
+                                            </DockPanel>
+                                            <TextBlock x:Name="DeviceHint" Style="{StaticResource Hint}"
+                                                       Text="Branchez le téléphone en USB, déverrouillez-le et choisissez « Transfert de fichiers » dans la notification USB." />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Destination, avec l'espace occupé du disque -->
+                                <Border Style="{StaticResource Card}">
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="28" Margin="0,0,16,0" VerticalAlignment="Top"
+                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                            <ui:SymbolIcon Symbol="Folder24" FontSize="28" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="Bibliothèque de photos" Style="{StaticResource SectionTitle}" />
+                                            <DockPanel>
+                                                <ui:Button DockPanel.Dock="Right" Content="Changer…" Icon="{ui:SymbolIcon FolderOpen24}"
+                                                           Click="ChangeLibrary_Click" Margin="8,0,0,0" />
+                                                <TextBlock x:Name="LibraryPath" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            </DockPanel>
+                                            <ProgressBar x:Name="DiskGauge" Height="6" Margin="0,10,0,0" Maximum="100" />
+                                            <TextBlock x:Name="LibraryStatus" Style="{StaticResource Hint}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Options -->
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Text="Fichiers à transférer" Style="{StaticResource SectionTitle}" />
+                                        <WrapPanel>
+                                            <CheckBox x:Name="IncludePhotos" Content="Photos" Margin="0,0,24,0" Click="Filter_Changed" />
+                                            <CheckBox x:Name="IncludeVideos" Content="Vidéos" Margin="0,0,24,0" Click="Filter_Changed" />
+                                            <CheckBox x:Name="IncludeScreenshots" Content="Captures d'écran" Margin="0,0,24,0" Click="Filter_Changed" />
+                                            <CheckBox x:Name="IncludeApps" Content="WhatsApp et autres applications" Click="Filter_Changed" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Text="Après le transfert" Style="{StaticResource SectionTitle}" />
+                                        <RadioButton x:Name="KeepOnPhone" Content="Garder les fichiers sur le téléphone" Margin="0,0,0,6" Click="Filter_Changed" />
+                                        <RadioButton x:Name="DeleteFromPhone" Content="Supprimer du téléphone les fichiers dont la copie est vérifiée" Click="Filter_Changed" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
                     </DockPanel>
-                    <TextBlock x:Name="DeviceHint" Style="{StaticResource Hint}"
-                               Text="Branchez le téléphone en USB, déverrouillez-le et choisissez « Transfert de fichiers » dans la notification USB." />
-                </StackPanel>
-            </GroupBox>
-
-            <GroupBox Header="Destination (bibliothèque de photos)">
-                <StackPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Changer…" Click="ChangeLibrary_Click" Margin="8,0,0,0" />
-                        <TextBlock x:Name="LibraryPath" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    </DockPanel>
-                    <TextBlock x:Name="LibraryStatus" Style="{StaticResource Hint}" />
-                </StackPanel>
-            </GroupBox>
-
-            <GroupBox Header="Fichiers à transférer">
-                <WrapPanel>
-                    <CheckBox x:Name="IncludePhotos" Content="Photos" Margin="0,0,18,0" Click="Filter_Changed" />
-                    <CheckBox x:Name="IncludeVideos" Content="Vidéos" Margin="0,0,18,0" Click="Filter_Changed" />
-                    <CheckBox x:Name="IncludeScreenshots" Content="Captures d'écran" Margin="0,0,18,0" Click="Filter_Changed" />
-                    <CheckBox x:Name="IncludeApps" Content="WhatsApp et autres applications" Click="Filter_Changed" />
-                </WrapPanel>
-            </GroupBox>
-
-            <GroupBox Header="Après le transfert">
-                <StackPanel>
-                    <RadioButton x:Name="KeepOnPhone" Content="Garder les fichiers sur le téléphone" Margin="0,0,0,4" Click="Filter_Changed" />
-                    <RadioButton x:Name="DeleteFromPhone" Content="Supprimer du téléphone les fichiers dont la copie est vérifiée" Click="Filter_Changed" />
-                </StackPanel>
-            </GroupBox>
-
-            <TextBlock Text="Journal" FontWeight="SemiBold" Margin="0,0,0,4" />
-        </StackPanel>
-
-        <TextBox x:Name="Log" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                 FontFamily="Consolas" FontSize="12" Margin="0,0,0,10" />
-    </DockPanel>
-        </TabItem>
-    </TabControl>
-</Window>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

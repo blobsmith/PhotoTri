@@ -63,6 +63,18 @@ public partial class PeopleView : UserControl
         Show(PeopleList.SelectedItem as PeopleListItem);
     }
 
+    /// <summary>Affiche une personne, ou le premier groupe de visages à nommer si <paramref name="personId"/> est null.</summary>
+    public void SelectPerson(long? personId)
+    {
+        var items = PeopleList.Items.OfType<PeopleListItem>().ToList();
+        PeopleListItem? target = personId is { } id
+            ? items.OfType<PersonItem>().FirstOrDefault(p => p.Person.Id == id)
+            : items.OfType<GroupItem>().FirstOrDefault();
+        if (target is null) return;
+        PeopleList.SelectedItem = target;
+        PeopleList.ScrollIntoView(target);
+    }
+
     void PeopleList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_reloading) return;
@@ -81,7 +93,7 @@ public partial class PeopleView : UserControl
         GroupPanel.Visibility = item is GroupItem ? Visibility.Visible : Visibility.Collapsed;
         PersonPanel.Visibility = item is PersonItem ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = item is null ? Visibility.Visible : Visibility.Collapsed;
-        EmptyText.Text = _catalog.Entries.Count == 0
+        EmptyMessage.Text = _catalog.Entries.Count == 0
             ? "Aucune photo pour l'instant."
             : "Aucun visage à nommer pour l'instant. Les visages des photos sont recherchés en arrière-plan : " +
               "les groupes de visages qui se ressemblent apparaîtront ici.";
@@ -149,6 +161,8 @@ public partial class PeopleView : UserControl
     void ShowPerson(Person person)
     {
         PersonTitle.Text = person.Name;
+        PersonPortrait.ImageSource = person.Faces.Count > 0 ? FaceImages.Load(person.Faces[0].CropPath) : null;
+        PersonSubtitle.Text = $"{person.Faces.Select(f => f.FileId).Distinct().Count():N0} photo(s)";
         RenameBox.Visibility = Visibility.Collapsed;
         RenameButton.Content = "Renommer…";
         FacesExpander.Header = $"Visages reconnus ({person.Faces.Count:N0})";

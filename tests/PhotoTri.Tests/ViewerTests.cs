@@ -2,6 +2,7 @@ using System.Text;
 using PhotoTri.Core.Devices;
 using PhotoTri.Core.Library;
 using PhotoTri.Core.Media;
+using PhotoTri.Core.Places;
 using PhotoTri.Core.Transfer;
 using PhotoTri.Core.Viewer;
 
@@ -45,6 +46,39 @@ public sealed class ViewerTests : IDisposable
             r => Assert.Equal(new MonthHeaderRow(2026, 9, "Septembre 2026", 1), r),
             r => Assert.IsType<DayHeaderRow>(r),
             r => Assert.Equal(new long[] { 5 }, Assert.IsType<ThumbnailRow>(r).Items.Select(i => i.Id)));
+    }
+
+    [Fact]
+    public void Day_summary_names_the_place_the_people_and_the_count()
+    {
+        var geneve = new Place("Genève", "Canton de Genève", "CH", "Suisse", 0);
+        var annecy = new Place("Annecy", "Auvergne-Rhône-Alpes", "FR", "France", 0);
+        var day = new[]
+        {
+            Entry(1, new DateTime(2026, 10, 10, 9, 0, 0)) with { Place = geneve, People = new[] { "Amélia" } },
+            Entry(2, new DateTime(2026, 10, 10, 10, 0, 0)) with { Place = geneve, People = new[] { "Amélia", "Aurélien" } },
+            Entry(3, new DateTime(2026, 10, 10, 11, 0, 0)) with { Place = annecy },
+            Entry(4, new DateTime(2026, 10, 10, 12, 0, 0), MediaKind.Video),
+        };
+        Assert.Equal("Genève · avec Amélia et Aurélien · 3 photos · 1 vidéo", Timeline.DaySummary(day));
+        Assert.Equal("1 photo", Timeline.DaySummary(new[] { Entry(5, DateTime.Today) }));
+    }
+
+    [Fact]
+    public void Search_matches_people_places_and_file_names_ignoring_accents()
+    {
+        var entry = Entry(1, DateTime.Today) with
+        {
+            Place = new Place("Genève", "Canton de Genève", "CH", "Suisse", 0),
+            Address = "Place du Molard, Genève",
+            People = new[] { "Amélia" },
+        };
+        Assert.True(LibrarySearch.Matcher("amelia")(entry));
+        Assert.True(LibrarySearch.Matcher("GENEVE amélia")(entry));
+        Assert.True(LibrarySearch.Matcher("molard")(entry));
+        Assert.True(LibrarySearch.Matcher("f1.jpg")(entry));
+        Assert.True(LibrarySearch.Matcher("   ")(entry));
+        Assert.False(LibrarySearch.Matcher("amelia tignes")(entry));
     }
 
     [Fact]
