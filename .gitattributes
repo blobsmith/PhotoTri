@@ -1,0 +1,6 @@
+# Fins de ligne normalisées dans le dépôt, adaptées à Windows dans la copie de travail
+* text=auto
+
+# Fichiers binaires : modèles de visages et base des villes
+*.onnx binary
+*.gz binary

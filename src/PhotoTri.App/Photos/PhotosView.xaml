@@ -1,0 +1,32 @@
+<UserControl x:Class="PhotoTri.App.Photos.PhotosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:photos="clr-namespace:PhotoTri.App.Photos">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TreeView x:Name="DateTree" Grid.Column="0" Margin="0,0,10,0" BorderThickness="0,0,1,0"
+                  SelectedItemChanged="DateTree_SelectedItemChanged" />
+
+        <DockPanel Grid.Column="1">
+            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <ComboBox x:Name="KindFilter" Width="120" Margin="0,0,8,4" SelectionChanged="Filter_Changed" />
+                <ComboBox x:Name="OriginFilter" Width="170" Margin="0,0,8,4" SelectionChanged="Filter_Changed" />
+                <ComboBox x:Name="DeviceFilter" Width="180" Margin="0,0,12,4" SelectionChanged="Filter_Changed" />
+                <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="#555" Margin="0,0,0,4" />
+            </WrapPanel>
+
+            <Border x:Name="OfflineBanner" DockPanel.Dock="Top" Background="#FFF4CE" Padding="8,5" Margin="0,0,0,6"
+                    Visibility="Collapsed">
+                <TextBlock TextWrapping="Wrap"
+                           Text="Le disque de la bibliothèque n'est pas branché : vous voyez les miniatures gardées sur ce PC. Branchez le disque pour ouvrir les photos." />
+            </Border>
+
+            <photos:TimelineView x:Name="Timeline"
+                                 EmptyMessage="Aucune photo pour l'instant. Utilisez l'onglet « Transfert » pour copier les photos de votre téléphone." />
+        </DockPanel>
+    </Grid>
+</UserControl>

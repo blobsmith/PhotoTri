@@ -1,0 +1,59 @@
+<Window x:Class="PhotoTri.App.Photos.ViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PhotoTri" WindowState="Maximized" Background="#111" Foreground="White"
+        Width="1000" Height="700" KeyDown="Window_KeyDown" ShowInTaskbar="False">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#33FFFFFF" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Barre du haut : date, nom du fichier, actions -->
+        <DockPanel DockPanel.Dock="Top" Margin="12,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button x:Name="CopyButton" Content="⧉ Copier" Click="Copy_Click"
+                        ToolTip="Copier dans le presse-papiers, pour le coller dans un dossier, un e-mail, un document… (Ctrl+C)" />
+                <Button Content="↗ Partager" Click="Share_Click"
+                        ToolTip="Partager avec une application, un contact ou un appareil à proximité" />
+                <Button Content="Ouvrir avec l'application par défaut" Click="OpenDefault_Click" />
+                <Button Content="Afficher dans l'Explorateur" Click="ShowInExplorer_Click" />
+                <Button Content="✕ Fermer" Click="Close_Click" />
+            </StackPanel>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock x:Name="TitleText" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock x:Name="DetailText" Foreground="#AAA" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Contrôles de la vidéo -->
+        <DockPanel x:Name="VideoControls" DockPanel.Dock="Bottom" Margin="12,6,12,12" Visibility="Collapsed">
+            <Button x:Name="PlayPauseButton" DockPanel.Dock="Left" Content="⏸ Pause" Click="PlayPause_Click" Margin="0,0,10,0" MinWidth="90" />
+            <TextBlock x:Name="TimeText" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#CCC" />
+            <Slider x:Name="Position" VerticalAlignment="Center" IsMoveToPointEnabled="True"
+                    Thumb.DragStarted="Position_DragStarted" Thumb.DragCompleted="Position_DragCompleted"
+                    PreviewMouseLeftButtonUp="Position_MouseUp" />
+        </DockPanel>
+
+        <Grid>
+            <Image x:Name="Picture" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Margin="8" />
+            <MediaElement x:Name="Video" LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="Uniform" Margin="8"
+                          MediaOpened="Video_MediaOpened" MediaEnded="Video_MediaEnded" MediaFailed="Video_MediaFailed" />
+            <TextBlock x:Name="Message" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="520" Foreground="#CCC" FontSize="15" />
+
+            <!-- Flèches de navigation -->
+            <Button x:Name="PreviousButton" HorizontalAlignment="Left" VerticalAlignment="Center" Content="‹" FontSize="40"
+                    Padding="14,0,16,6" Margin="10,0,0,0" Click="Previous_Click" ToolTip="Précédente (←)" />
+            <Button x:Name="NextButton" HorizontalAlignment="Right" VerticalAlignment="Center" Content="›" FontSize="40"
+                    Padding="16,0,14,6" Margin="0,0,10,0" Click="Next_Click" ToolTip="Suivante (→)" />
+        </Grid>
+    </DockPanel>
+</Window>

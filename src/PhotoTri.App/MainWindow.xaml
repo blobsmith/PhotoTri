@@ -1,0 +1,95 @@
+﻿<Window x:Class="PhotoTri.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:photos="clr-namespace:PhotoTri.App.Photos"
+        xmlns:places="clr-namespace:PhotoTri.App.Places"
+        xmlns:people="clr-namespace:PhotoTri.App.People"
+        Title="PhotoTri" Height="760" Width="1100" MinWidth="640" MinHeight="560"
+        WindowStartupLocation="CenterScreen" FontSize="13">
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="MinWidth" Value="90" />
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <TabControl x:Name="Tabs" Margin="8">
+        <TabItem Header="  Photos  ">
+            <photos:PhotosView x:Name="PhotosTab" Margin="6" />
+        </TabItem>
+        <TabItem Header="  Personnes  ">
+            <people:PeopleView x:Name="PeopleTab" Margin="6" />
+        </TabItem>
+        <TabItem Header="  Lieux  ">
+            <places:PlacesView x:Name="PlacesTab" Margin="6" />
+        </TabItem>
+        <TabItem x:Name="TransferTab" Header="  Transfert  ">
+    <DockPanel Margin="10">
+        <!-- Boutons d'action et progression -->
+        <StackPanel DockPanel.Dock="Bottom">
+            <ProgressBar x:Name="Progress" Height="18" Margin="0,0,0,4" />
+            <TextBlock x:Name="ProgressText" Margin="0,0,0,10" TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="AnalyzeButton" Content="Analyser" Click="Analyze_Click" Margin="0,0,8,0" />
+                <Button x:Name="TransferButton" Content="Transférer" Click="Transfer_Click" Margin="0,0,8,0"
+                        FontWeight="SemiBold" IsDefault="True" />
+                <Button x:Name="CancelButton" Content="Annuler" Click="Cancel_Click" IsEnabled="False" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top">
+            <GroupBox Header="Téléphone">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Actualiser" Click="RefreshDevices_Click" Margin="8,0,0,0" />
+                        <ComboBox x:Name="DeviceList" DisplayMemberPath="Name" SelectionChanged="DeviceList_SelectionChanged" />
+                    </DockPanel>
+                    <TextBlock x:Name="DeviceHint" Style="{StaticResource Hint}"
+                               Text="Branchez le téléphone en USB, déverrouillez-le et choisissez « Transfert de fichiers » dans la notification USB." />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Destination (bibliothèque de photos)">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Changer…" Click="ChangeLibrary_Click" Margin="8,0,0,0" />
+                        <TextBlock x:Name="LibraryPath" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                    <TextBlock x:Name="LibraryStatus" Style="{StaticResource Hint}" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Fichiers à transférer">
+                <WrapPanel>
+                    <CheckBox x:Name="IncludePhotos" Content="Photos" Margin="0,0,18,0" Click="Filter_Changed" />
+                    <CheckBox x:Name="IncludeVideos" Content="Vidéos" Margin="0,0,18,0" Click="Filter_Changed" />
+                    <CheckBox x:Name="IncludeScreenshots" Content="Captures d'écran" Margin="0,0,18,0" Click="Filter_Changed" />
+                    <CheckBox x:Name="IncludeApps" Content="WhatsApp et autres applications" Click="Filter_Changed" />
+                </WrapPanel>
+            </GroupBox>
+
+            <GroupBox Header="Après le transfert">
+                <StackPanel>
+                    <RadioButton x:Name="KeepOnPhone" Content="Garder les fichiers sur le téléphone" Margin="0,0,0,4" Click="Filter_Changed" />
+                    <RadioButton x:Name="DeleteFromPhone" Content="Supprimer du téléphone les fichiers dont la copie est vérifiée" Click="Filter_Changed" />
+                </StackPanel>
+            </GroupBox>
+
+            <TextBlock Text="Journal" FontWeight="SemiBold" Margin="0,0,0,4" />
+        </StackPanel>
+
+        <TextBox x:Name="Log" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                 FontFamily="Consolas" FontSize="12" Margin="0,0,0,10" />
+    </DockPanel>
+        </TabItem>
+    </TabControl>
+</Window>
