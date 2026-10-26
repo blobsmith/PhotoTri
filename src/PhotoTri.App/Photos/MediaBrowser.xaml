@@ -1,0 +1,23 @@
+<UserControl x:Class="PhotoTri.App.Photos.MediaBrowser"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:photos="clr-namespace:PhotoTri.App.Photos">
+    <!-- Les mêmes photos en vignettes (chronologie) ou en liste (sélection multiple) -->
+    <DockPanel>
+        <!-- Juste au-dessus des photos : nombre d'éléments et choix de l'affichage -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <ui:Button x:Name="GridModeButton" Icon="{ui:SymbolIcon Grid24}" Appearance="Secondary" Click="GridMode_Click"
+                           ToolTip="Vignettes" Padding="9" Margin="0,0,4,0" />
+                <ui:Button x:Name="ListModeButton" Icon="{ui:SymbolIcon TextBulletListLtr24}" Appearance="Transparent" Click="ListMode_Click"
+                           ToolTip="Liste : choisir plusieurs photos pour les copier, les partager ou les supprimer" Padding="9" />
+            </StackPanel>
+            <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        </DockPanel>
+        <Grid>
+            <photos:TimelineView x:Name="Timeline" />
+            <photos:MediaListView x:Name="MediaList" Visibility="Collapsed" />
+        </Grid>
+    </DockPanel>
+</UserControl>

@@ -15,16 +15,24 @@ static class MediaSharing
     /// Copie le fichier (à coller dans l'Explorateur, un e-mail, WhatsApp Web…) et, pour une photo,
     /// l'image elle-même (à coller dans Word, Paint…).
     /// </summary>
-    public static void Copy(string path, BitmapSource? image)
+    public static void Copy(string path, BitmapSource? image) => Copy(new[] { path }, image);
+
+    /// <summary>Copie plusieurs fichiers d'un coup (et, s'il est fourni, l'image affichée).</summary>
+    public static void Copy(IReadOnlyCollection<string> paths, BitmapSource? image = null)
     {
         var data = new DataObject();
-        data.SetFileDropList(new StringCollection { path });
+        var list = new StringCollection();
+        foreach (var p in paths) list.Add(p);
+        data.SetFileDropList(list);
         if (image is not null) data.SetImage(image);
         System.Windows.Clipboard.SetDataObject(data, copy: true);
     }
 
     /// <summary>Ouvre le panneau de partage de Windows (Mail, WhatsApp, Bluetooth, Partage de proximité…).</summary>
-    public static void Share(Window owner, string path, string title)
+    public static void Share(Window owner, string path, string title) => Share(owner, new[] { path }, title);
+
+    /// <summary>Partage plusieurs fichiers d'un coup.</summary>
+    public static void Share(Window owner, IReadOnlyCollection<string> paths, string title)
     {
         var hwnd = new System.Windows.Interop.WindowInteropHelper(owner).Handle;
         var interop = DataTransferManager.As<IDataTransferManagerInterop>();
@@ -39,9 +47,10 @@ static class MediaSharing
             try
             {
                 args.Request.Data.Properties.Title = title;
-                args.Request.Data.Properties.Description = Path.GetFileName(path);
-                var file = await StorageFile.GetFileFromPathAsync(path);
-                args.Request.Data.SetStorageItems(new IStorageItem[] { file });
+                args.Request.Data.Properties.Description = paths.Count == 1 ? Path.GetFileName(paths.First()) : $"{paths.Count} fichiers";
+                var files = new List<IStorageItem>();
+                foreach (var p in paths) files.Add(await StorageFile.GetFileFromPathAsync(p));
+                args.Request.Data.SetStorageItems(files);
             }
             catch (Exception ex)
             {

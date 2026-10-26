@@ -133,6 +133,33 @@ public partial class PhotosView : UserControl
             ? "Aucune photo pour l'instant. Cliquez sur « Importer » pour copier les photos de votre téléphone."
             : "Aucune photo ne correspond à votre recherche.";
         Timeline.Show(_visible, _libraryRoot);
+        if (_listMode) MediaList.Show(_visible, _libraryRoot);
+    }
+
+    // ---- Vignettes ou liste ----
+
+    bool _listMode;
+
+    /// <summary>Suppression demandée depuis la vue Liste (traitée par la fenêtre principale).</summary>
+    public event Action<IReadOnlyList<CatalogEntry>>? DeleteRequested
+    {
+        add => MediaList.DeleteRequested += value;
+        remove => MediaList.DeleteRequested -= value;
+    }
+
+    void GridMode_Click(object sender, RoutedEventArgs e) => SetListMode(false);
+
+    void ListMode_Click(object sender, RoutedEventArgs e) => SetListMode(true);
+
+    void SetListMode(bool list)
+    {
+        _listMode = list;
+        Timeline.Visibility = list ? Visibility.Collapsed : Visibility.Visible;
+        MediaList.Visibility = list ? Visibility.Visible : Visibility.Collapsed;
+        MonthJump.Visibility = list ? Visibility.Collapsed : Visibility.Visible;
+        GridModeButton.Appearance = list ? ControlAppearance.Transparent : ControlAppearance.Secondary;
+        ListModeButton.Appearance = list ? ControlAppearance.Secondary : ControlAppearance.Transparent;
+        if (list) MediaList.Show(_visible, _libraryRoot);
     }
 
     void BuildMonthJump()

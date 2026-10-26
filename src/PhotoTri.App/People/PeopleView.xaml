@@ -157,7 +157,7 @@
                             </StackPanel>
                         </Expander>
                     </StackPanel>
-                    <photos:TimelineView x:Name="Timeline" EmptyMessage="Aucune photo." />
+                    <photos:MediaBrowser x:Name="Timeline" EmptyMessage="Aucune photo." />
                 </DockPanel>
             </Grid>
         </Grid>

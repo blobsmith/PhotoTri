@@ -52,17 +52,19 @@
     </UserControl.Resources>
 
     <DockPanel>
-        <!-- Titre, recherche, import -->
+        <!-- Titre et import -->
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
             <ui:Button DockPanel.Dock="Right" Content="Importer" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary"
-                       Click="Import_Click" Margin="10,0,0,0" ToolTip="Transférer les photos du téléphone" />
-            <ui:TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="320" PlaceholderText="Rechercher une personne, un lieu…"
-                        Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" TextChanged="Search_TextChanged" />
+                       Click="Import_Click" ToolTip="Transférer les photos du téléphone" />
             <TextBlock Text="Photos" Style="{StaticResource PageTitle}" VerticalAlignment="Center" />
         </DockPanel>
 
+        <ui:InfoBar x:Name="OfflineBanner" DockPanel.Dock="Top" Severity="Warning" IsClosable="False" IsOpen="False" Margin="0,0,0,8"
+                    Title="Disque non branché"
+                    Message="Vous voyez les miniatures gardées sur ce PC. Branchez le disque de la bibliothèque pour ouvrir les photos." />
+
         <!-- Personnes et lieux en raccourcis -->
-        <ItemsControl x:Name="Shortcuts" DockPanel.Dock="Top" ItemTemplate="{StaticResource ShortcutTemplate}" Margin="0,0,0,12">
+        <ItemsControl x:Name="Shortcuts" DockPanel.Dock="Top" ItemTemplate="{StaticResource ShortcutTemplate}" Margin="0,0,0,14">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <WrapPanel />
@@ -70,21 +72,30 @@
             </ItemsControl.ItemsPanel>
         </ItemsControl>
 
-        <!-- Filtres -->
-        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
-            <ComboBox x:Name="MonthJump" Width="190" Margin="0,0,8,6" SelectionChanged="MonthJump_SelectionChanged"
-                      ToolTip="Aller directement à un mois" />
-            <ComboBox x:Name="KindFilter" Width="150" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
-            <ComboBox x:Name="OriginFilter" Width="190" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
-            <ComboBox x:Name="DeviceFilter" Width="200" Margin="0,0,12,6" SelectionChanged="Filter_Changed" />
-            <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-        </WrapPanel>
+        <!-- Juste au-dessus de la galerie : recherche, filtres, affichage en vignettes ou en liste -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="8,0,0,6">
+                <ui:Button x:Name="GridModeButton" Icon="{ui:SymbolIcon Grid24}" Appearance="Secondary" Click="GridMode_Click"
+                           ToolTip="Vignettes" Padding="9" Margin="0,0,4,0" />
+                <ui:Button x:Name="ListModeButton" Icon="{ui:SymbolIcon TextBulletListLtr24}" Appearance="Transparent" Click="ListMode_Click"
+                           ToolTip="Liste : choisir plusieurs photos pour les copier, les partager ou les supprimer" Padding="9" />
+            </StackPanel>
+            <WrapPanel>
+                <ui:TextBox x:Name="SearchBox" Width="300" Margin="0,0,8,6" PlaceholderText="Rechercher une personne, un lieu…"
+                            Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" TextChanged="Search_TextChanged" />
+                <ComboBox x:Name="MonthJump" Width="180" Margin="0,0,8,6" SelectionChanged="MonthJump_SelectionChanged"
+                          ToolTip="Aller directement à un mois" />
+                <ComboBox x:Name="KindFilter" Width="150" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
+                <ComboBox x:Name="OriginFilter" Width="180" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
+                <ComboBox x:Name="DeviceFilter" Width="190" Margin="0,0,12,6" SelectionChanged="Filter_Changed" />
+                <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+            </WrapPanel>
+        </DockPanel>
 
-        <ui:InfoBar x:Name="OfflineBanner" DockPanel.Dock="Top" Severity="Warning" IsClosable="False" IsOpen="False" Margin="0,4,0,8"
-                    Title="Disque non branché"
-                    Message="Vous voyez les miniatures gardées sur ce PC. Branchez le disque de la bibliothèque pour ouvrir les photos." />
-
-        <photos:TimelineView x:Name="Timeline"
-                             EmptyMessage="Aucune photo pour l'instant. Cliquez sur « Importer » pour copier les photos de votre téléphone." />
+        <Grid>
+            <photos:TimelineView x:Name="Timeline"
+                                 EmptyMessage="Aucune photo pour l'instant. Cliquez sur « Importer » pour copier les photos de votre téléphone." />
+            <photos:MediaListView x:Name="MediaList" Visibility="Collapsed" />
+        </Grid>
     </DockPanel>
 </UserControl>

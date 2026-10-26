@@ -35,6 +35,13 @@ public partial class PlacesView : UserControl
     /// <summary>L'utilisateur a coché ou décoché la recherche des adresses en ligne.</summary>
     public event Action<bool>? OnlineAddressesChanged;
 
+    /// <summary>Suppression demandée depuis la vue Liste des photos d'un lieu.</summary>
+    public event Action<IReadOnlyList<CatalogEntry>>? DeleteRequested
+    {
+        add => Timeline.DeleteRequested += value;
+        remove => Timeline.DeleteRequested -= value;
+    }
+
     public PlacesView()
     {
         InitializeComponent();

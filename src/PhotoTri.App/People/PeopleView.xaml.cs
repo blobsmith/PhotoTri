@@ -26,6 +26,13 @@ public partial class PeopleView : UserControl
         InitializeComponent();
     }
 
+    /// <summary>Suppression demandée depuis la vue Liste des photos d'une personne.</summary>
+    public event Action<IReadOnlyList<CatalogEntry>>? DeleteRequested
+    {
+        add => Timeline.DeleteRequested += value;
+        remove => Timeline.DeleteRequested -= value;
+    }
+
     /// <summary>Exécute une modification de la base (fournie par la fenêtre principale), puis recharge les onglets.</summary>
     public Func<Action<LibraryIndex>, Task>? Modify { get; set; }
 

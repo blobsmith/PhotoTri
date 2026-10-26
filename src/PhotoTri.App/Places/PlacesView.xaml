@@ -35,8 +35,10 @@
                     <RowDefinition Height="8" />
                     <RowDefinition Height="3*" />
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="TitleText" Grid.Row="0" FontSize="18" FontWeight="SemiBold" Margin="2,0,0,10"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock x:Name="TitleText" FontSize="18" FontWeight="SemiBold" Margin="2,0,0,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
                 <Border Grid.Row="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8"
                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Padding="1">
                     <Grid>
@@ -46,7 +48,7 @@
                     </Grid>
                 </Border>
                 <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" Background="Transparent" />
-                <photos:TimelineView x:Name="Timeline" Grid.Row="3"
+                <photos:MediaBrowser x:Name="Timeline" Grid.Row="3"
                                      EmptyMessage="Aucune photo géolocalisée pour l'instant. Les photos de l'appareil photo contiennent en général leur position GPS." />
             </Grid>
         </Grid>

@@ -212,6 +212,23 @@ public sealed class FacesTests : IDisposable
     }
 
     [Fact]
+    public void Removed_files_leave_the_catalog_but_are_not_imported_again()
+    {
+        using var index = LibraryWithPhotos(2);
+        var ids = SaveOneFacePerPhoto(index, Near(A), Near(B));
+        index.NameFaces(new[] { ids[1] }, "Léa");
+        var db = LibraryCatalog.DatabasePath(index.LibraryRoot);
+        var lea = PeopleCatalog.Load(db).Persons.Single().Faces.Single().FileId;
+
+        index.RemoveFiles(new[] { lea });
+
+        Assert.Single(LibraryCatalog.Load(db).Entries);
+        Assert.Empty(PeopleCatalog.Load(db).Persons); // plus aucune photo de Léa
+        var phone = new FolderPhoneSource(Path.Combine(_work, "phone"), "p1", "Test");
+        Assert.Empty(new TransferEngine(index).Plan(phone, new MediaFilter()).Items); // toujours sur le téléphone, pas recopiée
+    }
+
+    [Fact]
     public void Ignored_faces_are_no_longer_proposed()
     {
         using var index = LibraryWithPhotos(2);

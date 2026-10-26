@@ -18,7 +18,8 @@ public sealed record CatalogEntry(
     GeoPoint? Location = null,
     Place? Place = null,
     string? Address = null,
-    IReadOnlyList<string>? People = null);
+    IReadOnlyList<string>? People = null,
+    long Size = 0);
 
 /// <summary>
 /// Contenu de la bibliothèque tel qu'affiché par la visionneuse, lu en lecture seule depuis la base.
@@ -99,7 +100,7 @@ public sealed class LibraryCatalog
             var placeColumns = hasPlaces
                 ? "lat, lon, city, region, country_code, country, address"
                 : "NULL, NULL, NULL, NULL, NULL, NULL, NULL";
-            cmd.CommandText = $"SELECT id, sha256, rel_path, taken_at, kind, origin, device_id, {placeColumns} FROM files ORDER BY taken_at DESC, id DESC";
+            cmd.CommandText = $"SELECT id, sha256, rel_path, taken_at, kind, origin, device_id, {placeColumns}, size FROM files ORDER BY taken_at DESC, id DESC";
             using var r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -118,7 +119,8 @@ public sealed class LibraryCatalog
                     location,
                     place,
                     r.IsDBNull(13) ? null : r.GetString(13),
-                    people.GetValueOrDefault(r.GetInt64(0))));
+                    people.GetValueOrDefault(r.GetInt64(0)),
+                    r.GetInt64(14)));
             }
         }
 

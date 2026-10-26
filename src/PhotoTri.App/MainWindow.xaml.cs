@@ -42,6 +42,9 @@ public partial class MainWindow : FluentWindow
         };
         NavList.SelectedIndex = 0;
         PhotosTab.ImportRequested += () => Navigate("Transfer");
+        PhotosTab.DeleteRequested += async entries => await DeleteEntriesAsync(entries);
+        PeopleTab.DeleteRequested += async entries => await DeleteEntriesAsync(entries);
+        PlacesTab.DeleteRequested += async entries => await DeleteEntriesAsync(entries);
         PhotosTab.PersonRequested += id =>
         {
             Navigate("People");
@@ -146,6 +149,46 @@ public partial class MainWindow : FluentWindow
         {
             PeopleTab.SetStatus("Recherche des visages interrompue : " + ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Supprime des photos et vidéos de la bibliothèque : mise à la corbeille de Windows, puis retrait de l'index.
+    /// S'ils sont encore sur le téléphone, le prochain transfert ne les recopiera pas.
+    /// </summary>
+    async Task DeleteEntriesAsync(IReadOnlyList<CatalogEntry> entries)
+    {
+        if (OpenLibraryPath() is not { } root) return;
+        var size = TransferEngine.FormatSize(entries.Sum(e => e.Size));
+        var permanent = !RecycleBin.HasRecycleBin(root);
+        var message = $"Supprimer {entries.Count:N0} élément(s) ({size}) de la bibliothèque ?\n\n" +
+                      (permanent
+                          ? "⚠ La bibliothèque est sur un disque amovible, sans corbeille : la suppression sera DÉFINITIVE."
+                          : "Ils seront mis à la corbeille de Windows, d'où vous pourrez les restaurer.") +
+                      "\n\nS'ils sont encore sur le téléphone, ils ne seront pas recopiés au prochain transfert.";
+        if (MessageBox.Show(this, message, "Supprimer", MessageBoxButton.OKCancel,
+                permanent ? MessageBoxImage.Warning : MessageBoxImage.Question) != MessageBoxResult.OK)
+            return;
+
+        var (removed, failed) = await Task.Run(() =>
+        {
+            var ids = new List<long>();
+            var errors = 0;
+            foreach (var entry in entries)
+            {
+                var path = Path.Combine(root, entry.RelativePath);
+                // Un fichier déjà absent (supprimé à la main) est simplement retiré de l'index.
+                if (!File.Exists(path) || RecycleBin.Send(path)) ids.Add(entry.Id);
+                else errors++;
+            }
+            using var index = new LibraryIndex(root);
+            index.RemoveFiles(ids);
+            return (ids.Count, errors);
+        });
+        AppendLog($"{removed:N0} élément(s) supprimé(s) de la bibliothèque" + (failed > 0 ? $", {failed} n'ont pas pu l'être (fichier ouvert ailleurs ?)." : "."));
+        if (failed > 0)
+            MessageBox.Show(this, $"{failed} élément(s) n'ont pas pu être supprimés : ils sont peut-être ouverts dans une autre application.",
+                Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        await ReloadPhotosAsync();
     }
 
     /// <summary>Modification demandée depuis l'onglet Personnes (nommer, renommer, corriger), puis rechargement.</summary>

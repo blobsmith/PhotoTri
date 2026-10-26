@@ -187,6 +187,26 @@ public sealed partial class LibraryIndex
         tx.Commit();
     }
 
+    /// <summary>
+    /// Retire des fichiers de l'index (après leur mise à la corbeille). La trace de leur transfert est gardée :
+    /// s'ils sont encore sur le téléphone, le prochain transfert ne les recopiera pas.
+    /// </summary>
+    public void RemoveFiles(IEnumerable<long> fileIds)
+    {
+        using (var tx = _db.BeginTransaction())
+        {
+            foreach (var id in fileIds)
+            {
+                Run(tx, "DELETE FROM faces WHERE file_id = $id", ("$id", id));
+                Run(tx, "DELETE FROM files WHERE id = $id", ("$id", id));
+            }
+            tx.Commit();
+        }
+        // Une personne dont toutes les photos ont été supprimées disparaît.
+        DeletePersonsWithoutUserFaces();
+        ApplyAutoAssignments();
+    }
+
     long GetOrCreatePerson(SqliteTransaction tx, string name)
     {
         using var find = Command("SELECT id FROM persons WHERE name = $n", ("$n", name));
