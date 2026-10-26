@@ -77,6 +77,21 @@ public sealed partial class LibraryIndex
         tx.Commit();
     }
 
+    /// <summary>Cadre de chaque visage (en fraction de l'image), avec sa photo, pour recréer les vignettes.</summary>
+    public List<(string RelativePath, string Sha256, int Index, float X, float Y, float Width, float Height)> FaceBoxes()
+    {
+        using var cmd = Command("""
+            SELECT fi.rel_path, fi.sha256, f.idx, f.x, f.y, f.w, f.h
+            FROM faces f JOIN files fi ON fi.id = f.file_id
+            ORDER BY fi.id, f.idx
+            """);
+        using var r = cmd.ExecuteReader();
+        var list = new List<(string, string, int, float, float, float, float)>();
+        while (r.Read())
+            list.Add((r.GetString(0), r.GetString(1), r.GetInt32(2), r.GetFloat(3), r.GetFloat(4), r.GetFloat(5), r.GetFloat(6)));
+        return list;
+    }
+
     public List<FaceVector> LoadFaceVectors()
     {
         using var cmd = Command("SELECT id, embedding, person_id, assigned_by, rejected, ignored FROM faces ORDER BY id");

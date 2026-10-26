@@ -128,7 +128,18 @@ public partial class MainWindow : FluentWindow
                 return FaceIndexer.Run(index, progress, cts.Token);
             });
             if (cts.IsCancellationRequested) return;
-            PeopleTab.SetStatus(analyzed > 0 ? $"Visages à jour ({analyzed:N0} nouvelle(s) photo(s) analysée(s))." : "");
+
+            // Vignettes de visages absentes de ce PC (autre ordinateur, cache effacé…) : on les recrée.
+            PeopleTab.SetStatus("Vérification des vignettes de visages…");
+            var recreated = await Task.Run(() =>
+            {
+                using var index = new LibraryIndex(root);
+                return FaceIndexer.RegenerateMissingCrops(index, cts.Token);
+            });
+            if (cts.IsCancellationRequested) return;
+            if (recreated > 0) await ReloadPhotosAsync();
+            PeopleTab.SetStatus(analyzed > 0 ? $"Visages à jour ({analyzed:N0} nouvelle(s) photo(s) analysée(s))."
+                : recreated > 0 ? $"{recreated:N0} vignette(s) de visages recréée(s) sur ce PC." : "");
             if (analyzed > 0) await ReloadPhotosAsync();
         }
         catch (Exception ex) when (!cts.IsCancellationRequested)

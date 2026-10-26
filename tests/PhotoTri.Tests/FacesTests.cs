@@ -178,6 +178,40 @@ public sealed class FacesTests : IDisposable
     }
 
     [Fact]
+    public void Missing_face_thumbnails_are_recreated_from_the_photos()
+    {
+        // Vraie image (un dégradé) pour que la vignette puisse être découpée dedans.
+        var phone = Path.Combine(_work, "phone", "DCIM", "Camera");
+        Directory.CreateDirectory(phone);
+        var pixels = new byte[400 * 300 * 3];
+        for (var i = 0; i < pixels.Length; i++) pixels[i] = (byte)(i % 251);
+        var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(400, 300, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null, pixels, 400 * 3);
+        var encoder = new System.Windows.Media.Imaging.JpegBitmapEncoder();
+        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+        using (var file = File.Create(Path.Combine(phone, "IMG_20240101_100000.jpg"))) encoder.Save(file);
+
+        using var index = new LibraryIndex(Directory.CreateDirectory(Path.Combine(_work, "library")).FullName);
+        var source = new FolderPhoneSource(Path.Combine(_work, "phone"), "p1", "Test");
+        var engine = new TransferEngine(index);
+        engine.Execute(source, engine.Plan(source, new MediaFilter()), deleteFromPhone: false);
+        var photo = Assert.Single(index.PhotosWithoutFaces(10));
+        index.SaveFaces(photo.Id, new[] { new FaceToSave(0, .25f, .25f, .2f, .3f, .9f, Near(A)) });
+
+        var crop = FaceIndexer.CropPath(photo.Sha256, 0);
+        if (File.Exists(crop)) File.Delete(crop);
+        try
+        {
+            Assert.Equal(1, FaceIndexer.RegenerateMissingCrops(index));
+            Assert.True(File.Exists(crop));
+            Assert.Equal(0, FaceIndexer.RegenerateMissingCrops(index)); // déjà là
+        }
+        finally
+        {
+            if (File.Exists(crop)) File.Delete(crop);
+        }
+    }
+
+    [Fact]
     public void Ignored_faces_are_no_longer_proposed()
     {
         using var index = LibraryWithPhotos(2);

@@ -49,6 +49,36 @@ public static class FaceIndexer
         return done;
     }
 
+    /// <summary>
+    /// Recrée les vignettes de visages absentes de ce PC (bibliothèque ouverte sur un autre ordinateur,
+    /// cache effacé…), à partir des photos et des cadres enregistrés dans la base. Renvoie le nombre recréé.
+    /// </summary>
+    public static int RegenerateMissingCrops(LibraryIndex index, CancellationToken ct = default)
+    {
+        var created = 0;
+        foreach (var photo in index.FaceBoxes().Where(f => !File.Exists(CropPath(f.Sha256, f.Index))).GroupBy(f => f.RelativePath))
+        {
+            if (ct.IsCancellationRequested || !Directory.Exists(index.LibraryRoot)) break;
+            RgbImage image;
+            try
+            {
+                image = RgbImage.Load(Path.Combine(index.LibraryRoot, photo.Key), ImageSize);
+            }
+            catch (Exception)
+            {
+                continue; // photo absente ou illisible : la vignette restera vide
+            }
+            foreach (var f in photo)
+            {
+                var (w, h) = (f.Width * image.Width, f.Height * image.Height);
+                image.SaveSquareCrop(CropPath(f.Sha256, f.Index), f.X * image.Width + w / 2, f.Y * image.Height + h / 2,
+                    Math.Max(w, h) * 1.6f, CropPixels);
+                created++;
+            }
+        }
+        return created;
+    }
+
     static List<FaceToSave> Analyze(FaceEngine engine, string path, string sha)
     {
         var result = new List<FaceToSave>();
