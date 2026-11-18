@@ -15,12 +15,17 @@ public sealed record DayHeaderRow(DateOnly Day, string Title, string Subtitle = 
 public sealed record ThumbnailRow(IReadOnlyList<CatalogEntry> Items) : TimelineRow;
 
 /// <summary>Filtres de la visionneuse ; null = pas de filtre.</summary>
-public sealed record ViewerFilter(MediaKind? Kind = null, MediaOrigin? Origin = null, string? DeviceId = null)
+/// <summary>
+/// Filtres de la visionneuse ; null = pas de filtre. <paramref name="Documents"/> : false pour masquer
+/// les documents (ne garder que les souvenirs), true pour ne montrer qu'eux.
+/// </summary>
+public sealed record ViewerFilter(MediaKind? Kind = null, MediaOrigin? Origin = null, string? DeviceId = null, bool? Documents = null)
 {
     public bool Accepts(CatalogEntry e) =>
         (Kind is null || e.Kind == Kind)
         && (Origin is null || e.Origin == Origin)
-        && (DeviceId is null || e.DeviceId == DeviceId);
+        && (DeviceId is null || e.DeviceId == DeviceId)
+        && (Documents is null || (e.Document is not null) == Documents);
 }
 
 public static class Timeline

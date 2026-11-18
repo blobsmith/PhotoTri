@@ -13,6 +13,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using PhotoTri.Core;
 using PhotoTri.Core.Devices;
+using PhotoTri.Core.Documents;
 using PhotoTri.Core.Faces;
 using PhotoTri.Core.Library;
 using PhotoTri.Core.Media;
@@ -88,19 +89,70 @@ public partial class MainWindow : FluentWindow
             await RefreshDevicesAsync();
         };
         PeopleTab.Modify = ModifyPeopleAsync;
+        DocumentsTab.Modify = ModifyPeopleAsync;
+        DocumentsTab.DeleteRequested += async entries => await DeleteEntriesAsync(entries);
         Closed += (_, _) =>
         {
             _placesCts?.Cancel();
             _facesCts?.Cancel();
+            _documentsCts?.Cancel();
             DisposeDevices();
         };
     }
 
-    /// <summary>Analyses en arrière-plan : lieux et visages des nouveaux fichiers.</summary>
+    /// <summary>Analyses en arrière-plan : lieux, puis visages et documents des nouveaux fichiers.</summary>
     void StartBackgroundWork()
     {
         _ = RunPlacesAsync();
-        _ = RunFacesAsync();
+        _ = RunFacesThenDocumentsAsync();
+    }
+
+    // Visages puis documents, l'un après l'autre : les deux sollicitent beaucoup le processeur.
+    async Task RunFacesThenDocumentsAsync()
+    {
+        await RunFacesAsync();
+        await RunDocumentsAsync();
+    }
+
+    // ---- Documents (en arrière-plan) ----
+
+    CancellationTokenSource? _documentsCts;
+
+    async Task RunDocumentsAsync()
+    {
+        _documentsCts?.Cancel();
+        var cts = _documentsCts = new CancellationTokenSource();
+        var root = _settings.Library!.Resolve();
+        if (root is null)
+        {
+            DocumentsTab.SetStatus("Disque de la bibliothèque non branché.");
+            return;
+        }
+        try
+        {
+            var progress = new Progress<(int Done, int Total)>(p =>
+            {
+                DocumentsTab.SetStatus($"Lecture des documents : {p.Done:N0} / {p.Total:N0} photo(s)…");
+                if (p.Done % 100 == 0) _ = ReloadPhotosAsync();
+            });
+            var read = await Task.Run(async () =>
+            {
+                using var index = new LibraryIndex(root);
+                return await DocumentIndexer.RunAsync(index, progress, cts.Token);
+            });
+            if (cts.IsCancellationRequested) return;
+            DocumentsTab.SetStatus(read switch
+            {
+                null => "La reconnaissance de texte n'est pas disponible : ajoutez le français dans Paramètres › Heure et langue › Langue.",
+                > 0 => $"Documents à jour ({read:N0} photo(s) lue(s)).",
+                _ => "",
+            });
+            if (read > 0) await ReloadPhotosAsync();
+        }
+        catch (Exception ex) when (!cts.IsCancellationRequested)
+        {
+            DocumentsTab.SetStatus("Lecture des documents interrompue : " + ex.Message);
+        }
     }
 
     // ---- Visages (en arrière-plan) ----
@@ -305,6 +357,7 @@ public partial class MainWindow : FluentWindow
         PhotosTab.Visibility = tag == "Photos" ? Visibility.Visible : Visibility.Collapsed;
         PeopleTab.Visibility = tag == "People" ? Visibility.Visible : Visibility.Collapsed;
         PlacesTab.Visibility = tag == "Places" ? Visibility.Visible : Visibility.Collapsed;
+        DocumentsTab.Visibility = tag == "Documents" ? Visibility.Visible : Visibility.Collapsed;
         TransferTab.Visibility = tag == "Transfer" ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -392,6 +445,7 @@ public partial class MainWindow : FluentWindow
         PhotosTab.Load(catalog, people, root);
         PlacesTab.Load(catalog, root);
         PeopleTab.Load(people, catalog, root);
+        DocumentsTab.Load(catalog, root);
         if (catalog.Entries.Count == 0 && !_shownTransferTab)
         {
             // Premier lancement : rien à montrer, on propose directement le transfert.

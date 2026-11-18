@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Data.Sqlite;
+using PhotoTri.Core.Documents;
 using PhotoTri.Core.Media;
 using PhotoTri.Core.Places;
 
@@ -19,7 +20,9 @@ public sealed record CatalogEntry(
     Place? Place = null,
     string? Address = null,
     IReadOnlyList<string>? People = null,
-    long Size = 0);
+    long Size = 0,
+    DocumentKind? Document = null,
+    string? DocumentText = null);
 
 /// <summary>
 /// Contenu de la bibliothèque tel qu'affiché par la visionneuse, lu en lecture seule depuis la base.
@@ -94,13 +97,22 @@ public sealed class LibraryCatalog
             }
         }
 
+        // Une copie locale faite avant l'apparition des documents n'a pas leurs colonnes.
+        bool hasDocuments;
+        using (var check = db.CreateCommand())
+        {
+            check.CommandText = "SELECT 1 FROM pragma_table_info('files') WHERE name = 'doc_user'";
+            hasDocuments = check.ExecuteScalar() is not null;
+        }
+
         var entries = new List<CatalogEntry>();
         using (var cmd = db.CreateCommand())
         {
             var placeColumns = hasPlaces
                 ? "lat, lon, city, region, country_code, country, address"
                 : "NULL, NULL, NULL, NULL, NULL, NULL, NULL";
-            cmd.CommandText = $"SELECT id, sha256, rel_path, taken_at, kind, origin, device_id, {placeColumns}, size FROM files ORDER BY taken_at DESC, id DESC";
+            var documentColumns = hasDocuments ? "doc_kind, doc_user, doc_text" : "NULL, NULL, NULL";
+            cmd.CommandText = $"SELECT id, sha256, rel_path, taken_at, kind, origin, device_id, {placeColumns}, size, {documentColumns} FROM files ORDER BY taken_at DESC, id DESC";
             using var r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -120,7 +132,9 @@ public sealed class LibraryCatalog
                     place,
                     r.IsDBNull(13) ? null : r.GetString(13),
                     people.GetValueOrDefault(r.GetInt64(0)),
-                    r.GetInt64(14)));
+                    r.GetInt64(14),
+                    EffectiveDocument(r.IsDBNull(15) ? null : r.GetString(15), r.IsDBNull(16) ? null : r.GetString(16)),
+                    r.IsDBNull(17) ? null : r.GetString(17)));
             }
         }
 
@@ -132,6 +146,13 @@ public sealed class LibraryCatalog
             while (r.Read()) devices[r.GetString(0)] = r.GetString(1);
         }
         return new LibraryCatalog(entries, devices);
+    }
+
+    /// <summary>La correction de l'utilisateur l'emporte sur la reconnaissance (« None » : pas un document).</summary>
+    static DocumentKind? EffectiveDocument(string? detected, string? byUser)
+    {
+        var value = byUser ?? detected;
+        return value is null or "None" ? null : Enum.Parse<DocumentKind>(value);
     }
 
     /// <summary>Met à jour la copie locale de la base (sauvegarde SQLite, sûre même pendant l'écriture).</summary>

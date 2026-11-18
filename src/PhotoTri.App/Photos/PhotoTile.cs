@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using PhotoTri.App.Thumbnails;
+using PhotoTri.Core.Documents;
 using PhotoTri.Core.Library;
 using PhotoTri.Core.Media;
 
@@ -27,7 +28,9 @@ sealed class PhotoTile(CatalogEntry entry, string? libraryRoot, ThumbnailService
     public string DateText => Entry.TakenAt.ToString("dd/MM/yyyy HH:mm");
     public string PlaceText => Entry.Place is { } p ? $"{p.City}, {p.Country}" : "";
     public string PeopleText => Entry.People is { Count: > 0 } names ? string.Join(", ", names) : "";
-    public string KindText => (IsVideo ? "Vidéo" : "Photo") + " · " + MediaClassifier.Label(Entry.Origin);
+    public string KindText => Entry.Document is { } doc
+        ? DocumentClassifier.Label(doc)
+        : (IsVideo ? "Vidéo" : "Photo") + " · " + MediaClassifier.Label(Entry.Origin);
     public string SizeText => Core.Transfer.TransferEngine.FormatSize(Entry.Size);
 
     public string ToolTip => string.Join("\n", new[]

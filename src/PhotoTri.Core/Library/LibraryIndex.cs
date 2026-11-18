@@ -90,6 +90,7 @@ public sealed partial class LibraryIndex : IDisposable
         AddColumnIfMissing("addresses", "country", "TEXT");
         AddColumnIfMissing("addresses", "version", "INTEGER NOT NULL DEFAULT 1");
         CreateFaceTables();
+        CreateDocumentColumns();
     }
 
     /// <summary>

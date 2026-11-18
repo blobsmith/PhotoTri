@@ -55,7 +55,9 @@ public partial class ViewerWindow : Window
         var people = tile.Entry.People is { Count: > 0 } names ? "avec " + string.Join(", ", names) : null;
         DetailText.Text = string.Join(" · ", new[]
         {
-            tile.FileName, people, place, MediaClassifier.Label(tile.Entry.Origin), $"{_index + 1:N0} / {_tiles.Count:N0}",
+            tile.FileName, people, place,
+            tile.Entry.Document is { } doc ? Core.Documents.DocumentClassifier.Label(doc) : MediaClassifier.Label(tile.Entry.Origin),
+            $"{_index + 1:N0} / {_tiles.Count:N0}",
         }.Where(s => s is not null));
         PreviousButton.Visibility = _index > 0 ? Visibility.Visible : Visibility.Hidden;
         NextButton.Visibility = _index < _tiles.Count - 1 ? Visibility.Visible : Visibility.Hidden;

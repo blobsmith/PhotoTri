@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using PhotoTri.Core.Documents;
 using PhotoTri.Core.Library;
 
 namespace PhotoTri.Core.Viewer;
@@ -26,6 +27,8 @@ public static class LibrarySearch
         var parts = new List<string?> { Path.GetFileName(e.RelativePath), e.Address };
         if (e.Place is { } p) parts.AddRange(new[] { p.City, p.Region, p.Country });
         if (e.People is { } people) parts.AddRange(people);
+        // Documents : leur type (« permis », « facture »…) et le texte lu dessus.
+        if (e.Document is { } doc) parts.AddRange(new[] { "document", DocumentClassifier.Label(doc), e.DocumentText });
         return Normalize(string.Join(' ', parts.Where(s => s is not null)));
     }
 

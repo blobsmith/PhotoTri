@@ -5,6 +5,7 @@
                  xmlns:photos="clr-namespace:PhotoTri.App.Photos"
                  xmlns:places="clr-namespace:PhotoTri.App.Places"
                  xmlns:people="clr-namespace:PhotoTri.App.People"
+                 xmlns:documents="clr-namespace:PhotoTri.App.Documents"
                  Title="PhotoTri" Height="800" Width="1200" MinWidth="760" MinHeight="560"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica" WindowCornerPreference="Round">
@@ -64,6 +65,12 @@
                             <TextBlock Text="Lieux" VerticalAlignment="Center" />
                         </StackPanel>
                     </ListBoxItem>
+                    <ListBoxItem Tag="Documents">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DocumentText24" FontSize="18" Margin="0,0,12,0" />
+                            <TextBlock Text="Documents" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
                     <ListBoxItem Tag="Transfer">
                         <StackPanel Orientation="Horizontal">
                             <ui:SymbolIcon Symbol="Phone24" FontSize="18" Margin="0,0,12,0" />
@@ -80,6 +87,7 @@
                     <photos:PhotosView x:Name="PhotosTab" />
                     <people:PeopleView x:Name="PeopleTab" Visibility="Collapsed" />
                     <places:PlacesView x:Name="PlacesTab" Visibility="Collapsed" />
+                    <documents:DocumentsView x:Name="DocumentsTab" Visibility="Collapsed" />
 
                     <!-- Transfert -->
                     <DockPanel x:Name="TransferTab" Visibility="Collapsed">

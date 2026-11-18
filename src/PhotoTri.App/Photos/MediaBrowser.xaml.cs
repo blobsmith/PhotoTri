@@ -46,6 +46,18 @@ public partial class MediaBrowser : UserControl
 
     public void ScrollToTop() => Timeline.ScrollToTop();
 
+    /// <summary>Bouton supplémentaire de la vue Liste, qui agit sur la sélection.</summary>
+    public void AddListAction(string label, SymbolRegular icon, string toolTip, Action<IReadOnlyList<CatalogEntry>> handler) =>
+        MediaList.AddAction(label, icon, toolTip, handler);
+
+    /// <summary>Bouton à menu de la vue Liste, chaque choix agissant sur la sélection.</summary>
+    public void AddListMenuAction(string label, SymbolRegular icon, string toolTip,
+        IEnumerable<(string Label, Action<IReadOnlyList<CatalogEntry>> Handler)> choices) =>
+        MediaList.AddMenuAction(label, icon, toolTip, choices);
+
+    /// <summary>Passe en vignettes ou en liste.</summary>
+    public void ShowList(bool list) => SetListMode(list);
+
     void GridMode_Click(object sender, RoutedEventArgs e) => SetListMode(false);
 
     void ListMode_Click(object sender, RoutedEventArgs e) => SetListMode(true);

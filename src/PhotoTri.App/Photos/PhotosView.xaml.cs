@@ -49,9 +49,12 @@ public partial class PhotosView : UserControl
         _populating = true;
         KindFilter.ItemsSource = new[]
         {
-            new Choice<MediaKind?>("Photos et vidéos", null),
-            new Choice<MediaKind?>("Photos", MediaKind.Photo),
-            new Choice<MediaKind?>("Vidéos", MediaKind.Video),
+            new Choice<(MediaKind? Kind, bool? Documents)>("Photos et vidéos", (null, null)),
+            new Choice<(MediaKind? Kind, bool? Documents)>("Photos", (MediaKind.Photo, null)),
+            new Choice<(MediaKind? Kind, bool? Documents)>("Vidéos", (MediaKind.Video, null)),
+            // Ne garder que les souvenirs, ou au contraire que les papiers.
+            new Choice<(MediaKind? Kind, bool? Documents)>("Sans les documents", (null, false)),
+            new Choice<(MediaKind? Kind, bool? Documents)>("Documents seulement", (null, true)),
         };
         KindFilter.SelectedIndex = 0;
         OriginFilter.ItemsSource = new[] { new Choice<MediaOrigin?>("Toutes les origines", null) }
@@ -105,9 +108,10 @@ public partial class PhotosView : UserControl
     }
 
     ViewerFilter CurrentFilter => new(
-        (KindFilter.SelectedItem as Choice<MediaKind?>)?.Value,
+        (KindFilter.SelectedItem as Choice<(MediaKind? Kind, bool? Documents)>)?.Value.Kind,
         (OriginFilter.SelectedItem as Choice<MediaOrigin?>)?.Value,
-        (DeviceFilter.SelectedItem as Choice<string?>)?.Value);
+        (DeviceFilter.SelectedItem as Choice<string?>)?.Value,
+        (KindFilter.SelectedItem as Choice<(MediaKind? Kind, bool? Documents)>)?.Value.Documents);
 
     void Filter_Changed(object sender, SelectionChangedEventArgs e)
     {

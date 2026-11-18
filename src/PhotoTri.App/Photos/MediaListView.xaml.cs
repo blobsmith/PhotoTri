@@ -5,7 +5,10 @@ using System.Windows.Input;
 using PhotoTri.App.Thumbnails;
 using PhotoTri.Core.Library;
 using PhotoTri.Core.Transfer;
+using Wpf.Ui.Controls;
+using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
 
 namespace PhotoTri.App.Photos;
 
@@ -102,11 +105,51 @@ public partial class MediaListView : UserControl
 
     void List_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateSelection();
 
+    // ---- Actions propres à une page (par exemple « Ce n'est pas un document ») ----
+
+    readonly List<UIElement> _extraActions = new();
+
+    /// <summary>Ajoute un bouton qui agit sur la sélection, avant « Supprimer ».</summary>
+    public void AddAction(string label, SymbolRegular icon, string toolTip, Action<IReadOnlyList<CatalogEntry>> handler)
+    {
+        var button = new Wpf.Ui.Controls.Button { Content = label, Icon = new SymbolIcon(icon), ToolTip = toolTip, Margin = new Thickness(0, 0, 4, 0) };
+        button.Click += (_, _) => handler(SelectedTiles.Select(t => t.Entry).ToList());
+        InsertAction(button);
+    }
+
+    /// <summary>Ajoute un bouton qui ouvre un menu de choix, chacun agissant sur la sélection.</summary>
+    public void AddMenuAction(string label, SymbolRegular icon, string toolTip,
+        IEnumerable<(string Label, Action<IReadOnlyList<CatalogEntry>> Handler)> choices)
+    {
+        var menu = new ContextMenu();
+        foreach (var (choiceLabel, handler) in choices)
+        {
+            var item = new MenuItem { Header = choiceLabel };
+            item.Click += (_, _) => handler(SelectedTiles.Select(t => t.Entry).ToList());
+            menu.Items.Add(item);
+        }
+        var button = new Wpf.Ui.Controls.Button { Content = label, Icon = new SymbolIcon(icon), ToolTip = toolTip, Margin = new Thickness(0, 0, 4, 0), ContextMenu = menu };
+        button.Click += (_, _) =>
+        {
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        };
+        InsertAction(button);
+    }
+
+    void InsertAction(UIElement action)
+    {
+        ActionsPanel.Children.Insert(ActionsPanel.Children.IndexOf(DeleteButton), action);
+        _extraActions.Add(action);
+        UpdateSelection();
+    }
+
     void UpdateSelection()
     {
         var selected = SelectedTiles;
         var any = selected.Count > 0;
         CopyButton.IsEnabled = ShareButton.IsEnabled = DeleteButton.IsEnabled = any;
+        foreach (var action in _extraActions) action.IsEnabled = any;
         SelectionText.Text = any
             ? $"{selected.Count:N0} élément(s) sélectionné(s) · {TransferEngine.FormatSize(selected.Sum(t => t.Entry.Size))}"
             : $"{_rows.Count:N0} élément(s) · Ctrl ou Maj pour en choisir plusieurs";

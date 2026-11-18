@@ -85,7 +85,7 @@
                             Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" TextChanged="Search_TextChanged" />
                 <ComboBox x:Name="MonthJump" Width="180" Margin="0,0,8,6" SelectionChanged="MonthJump_SelectionChanged"
                           ToolTip="Aller directement à un mois" />
-                <ComboBox x:Name="KindFilter" Width="150" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
+                <ComboBox x:Name="KindFilter" Width="190" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
                 <ComboBox x:Name="OriginFilter" Width="180" Margin="0,0,8,6" SelectionChanged="Filter_Changed" />
                 <ComboBox x:Name="DeviceFilter" Width="190" Margin="0,0,12,6" SelectionChanged="Filter_Changed" />
                 <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />

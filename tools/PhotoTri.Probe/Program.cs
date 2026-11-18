@@ -71,6 +71,29 @@ if (args.Length > 0 && args[0] == "faces")
     return;
 }
 
+// « docs [n] » : documents reconnus dans n photos au hasard (lecture seule ; le texte lu n'est jamais affiché).
+if (args.Length > 0 && args[0] == "docs")
+{
+    var reader = PhotoTri.Core.Documents.PhotoTextReader.TryCreate();
+    if (reader is null) { Console.WriteLine("Aucune langue de reconnaissance de texte installée dans Windows."); return; }
+    Console.WriteLine($"Langue de lecture : {reader.Language}");
+    var sample = Directory.EnumerateFiles(library, "*.jpg", SearchOption.AllDirectories)
+        .Where(f => !f.Contains(LibraryLayout.DataFolderName))
+        .OrderBy(f => f.GetHashCode()).Take(args.Length > 1 ? int.Parse(args[1]) : 150).ToList();
+    var timer = Stopwatch.StartNew();
+    var found = new List<(string File, PhotoTri.Core.Documents.DocumentKind Kind, int Words)>();
+    foreach (var file in sample)
+    {
+        var lines = await reader.ReadAsync(file);
+        if (PhotoTri.Core.Documents.DocumentClassifier.Classify(lines) is { } kind)
+            found.Add((Path.GetFileName(file), kind, lines.Sum(l => l.Split(' ').Length)));
+    }
+    Console.WriteLine($"{sample.Count} photos lues en {timer.Elapsed.TotalSeconds:0.0} s ({timer.Elapsed.TotalMilliseconds / sample.Count:0} ms par photo)");
+    foreach (var g in found.GroupBy(f => f.Kind).OrderBy(g => g.Key))
+        Console.WriteLine($"  {PhotoTri.Core.Documents.DocumentClassifier.Label(g.Key),-20} {g.Count(),3} : {string.Join(", ", g.Take(6).Select(f => $"{f.File} ({f.Words} mots)"))}");
+    return;
+}
+
 // « onnx <modèle> » : entrées et sorties d'un modèle.
 if (args.Length > 1 && args[0] == "onnx")
 {
